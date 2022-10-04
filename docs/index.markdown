@@ -5,8 +5,6 @@
 layout: home
 ---
 
-# ARTEMIS
-
 An automated unit testing tool for Dafny. 
 
 [**Purpose**](#purpose) <br>
