@@ -9,10 +9,9 @@ An automated unit testing tool for Dafny.
 
 [**Purpose**](#purpose) <br>
 [**General Approach**](#general-approach) <br>
-[**Implementation**](#implementation) <br>
+[**How to Install?**](#how-to-install-artemis) <br>
 [**How to Generate Tests?**](#how-to-generate-tests) <br>
 [**How to Run Tests?**](#how-to-run-tests) <br>
-[**Dead Code Identification Example**](#dead-code-identification-example)
 
 ## Purpose
 
@@ -26,7 +25,7 @@ To generate a test that covers a particular basic block or path, we add an asser
 
 While these manipulations could be done with the Dafny source directly, we instead modify the Boogie translation, since it is much easier to work with basic blocks and paths on this lower level.
 
-## How to Install ARTEMIS
+## How to Install Artemis?
 
 TODO
 
