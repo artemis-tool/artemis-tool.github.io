@@ -10,7 +10,7 @@ An automated unit testing tool for Dafny.
 [**Purpose**](#purpose) <br>
 [**How to Install?**](#how-to-install-artemis) <br>
 [**Getting Started**](#getting-started) <br>
-[**Overview of Command Line Options**](#overview-of-command-line-options) <br>
+<!--- [**Overview of Command Line Options**](#overview-of-command-line-options) <br> -->
 
 ## Purpose
 
@@ -45,7 +45,7 @@ module Module {
 }
 ```
 
-To generate tests for this program, run the following command (see below for a breakdown of the command-line options):
+To generate tests for this program, run the following command<!--- (see below for a breakdown of the command-line options) -->:
 
 ```bash
 dotnet <YOUR_DAFNY_FOLDER>/Binaries/Dafny.dll /generateTestMode:Block /timeLimit:5 /generateTestTargetMethod:Module.LexLeq /generateTestOracle:Spec /generateTestSeqLengthLimit:3 Program.dfy
@@ -120,8 +120,10 @@ Finally, to execute the tests, first create a `Program.csproj` file with the fol
 
 Once done, run `dotnet test Program.csproj` to execute the tests.
 
+<!---
 ## Overview of Command Line Options
 
 Artemis supports the following command line options:
+-->
 
 
