@@ -9,12 +9,12 @@ An automated unit testing tool for Dafny.
 
 [**Purpose**](#purpose) <br>
 [**How to Install?**](#how-to-install-artemis) <br>
-[**Get Started**](#get-started) <br>
-[**How to Run Tests?**](#how-to-run-tests) <br>
+[**Getting Started**](#getting-started) <br>
+[**Overview of Command Line Options**](#overview-of-command-line-options) <br>
 
 ## Purpose
 
-Artemis is a tool that generate runtime tests for Dafny code. The test could be used:
+Artemis is a tool that generate runtime tests for Dafny code. The tests could be used:
 - to ensure a compiled program preserves the behavior verified in Dafny;
 - to increase confidence in specifications of external libraries;
 - to increase assurance that a Dafny program is functionally equivalent to an existing implementation that may be written in another language.
@@ -26,7 +26,7 @@ We have tested Artemis on Ubuntu and Mac. To install the tool:
 2. Install `z3` version `4.8.5` as described in the official Dafny guide ([for Linux](https://github.com/dafny-lang/dafny/wiki/INSTALL#linux-source)) ([for Mac](https://github.com/dafny-lang/dafny/wiki/INSTALL#Mac-binary))
 3. Build the cloned repository with dotnet: `dotnet build Source/Dafny.sln`
 
-## Get Started
+## Getting Started
 
 Consider the following simple Dafny program stored in a file called `Program.dfy` (a slightly modified version of [this method](https://github.com/aws/aws-encryption-sdk-dafny/blob/fd2516f9d919ccff05ccd14f9ff158c11fb42fa1/src/Util/Sorting.dfy#L50-L57) from AWS Encryption SDK):
 
@@ -104,12 +104,24 @@ public static void test0() {
 
 Finally, to execute the tests, first create a `Program.csproj` file with the following code in it:
 
-```
-<ItemGroup>
-    <PackageReference Include="xunit" Version="2.4.1" />
-    <PackageReference Include="Moq" Version="4.16.1" />
-</ItemGroup>
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.10.0" />
+        <PackageReference Include="xunit" Version="2.4.1" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3" />
+        <PackageReference Include="Moq" Version="4.16.1" />
+    </ItemGroup>
+</Project>
 ```
 
 Once done, run `dotnet test Program.csproj` to execute the tests.
+
+## Overview of Command Line Options
+
+Artemis supports the following command line options:
+
 
