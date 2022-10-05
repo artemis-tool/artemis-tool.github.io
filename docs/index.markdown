@@ -23,7 +23,7 @@ Artemis is a tool that generate runtime tests for Dafny code. The tests could be
 
 We have tested Artemis on Ubuntu and Mac. To install the tool:
 1. Clone the modified version of Dafny: `git clone --recursive https://github.com/Dargones/dafny.git -b LatestPlus`
-2. Install `z3` version `4.8.5` as described in the official Dafny guide ([for Linux](https://github.com/dafny-lang/dafny/wiki/INSTALL#linux-source)) ([for Mac](https://github.com/dafny-lang/dafny/wiki/INSTALL#Mac-binary))
+2. Install `z3` version `4.8.5` as described in the official Dafny guide ([for Linux](https://github.com/dafny-lang/dafny/wiki/INSTALL#linux-source)) ([for Mac](https://github.com/dafny-lang/dafny/wiki/INSTALL#Mac-source))
 3. Build the cloned repository with dotnet: `dotnet build Source/Dafny.sln`
 
 ## Getting Started
