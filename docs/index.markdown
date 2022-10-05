@@ -8,89 +8,101 @@ layout: home
 An automated unit testing tool for Dafny. 
 
 [**Purpose**](#purpose) <br>
-[**General Approach**](#general-approach) <br>
 [**How to Install?**](#how-to-install-artemis) <br>
-[**How to Generate Tests?**](#how-to-generate-tests) <br>
+[**Get Started**](#get-started) <br>
 [**How to Run Tests?**](#how-to-run-tests) <br>
 
 ## Purpose
 
-Block- and path-coverage tests of Dafny code can be used to:
-- Test the implementation of unverified external methods by increasing one's assurance that compiled tests produce no errors when run.
-- Increase assurance that Dafny and Java (C#, Rust, etc.) implementations of some functionality are equivalent by generating tests in Dafny and comparing the results of running these tests on compiled Dafny and original Java (C#, Rust, etc.).
-
-## General Approach
-
-To generate a test that covers a particular basic block or path, we add an assertion to the target method that is violated in the event that a particular block is visited or a particular path is taken. We then use the counterexample model provided by the prover to extract the inputs to the target method that cause the assertion violation, which gives us the desired test case.
-
-While these manipulations could be done with the Dafny source directly, we instead modify the Boogie translation, since it is much easier to work with basic blocks and paths on this lower level.
+Artemis is a tool that generate runtime tests for Dafny code. The test could be used:
+- to ensure a compiled program preserves the behavior verified in Dafny;
+- to increase confidence in specifications of external libraries;
+- to increase assurance that a Dafny program is functionally equivalent to an existing implementation that may be written in another language.
 
 ## How to Install Artemis?
 
-TODO
+We have tested Artemis on Ubuntu and Mac. To install the tool:
+1. Clone the modified version of Dafny: `git clone --recursive https://github.com/Dargones/dafny.git -b LatestPlus`
+2. Install `z3` version `4.8.5` as described in the official Dafny guide ([for Linux](https://github.com/dafny-lang/dafny/wiki/INSTALL#linux-source)) ([for Mac](https://github.com/dafny-lang/dafny/wiki/INSTALL#Mac-binary))
+3. Build the cloned repository with dotnet: `dotnet build Source/Dafny.sln`
 
-## How to Generate Tests?
+## Get Started
 
-- Test generation currently works with all basic types, user-defined classes, sequences, sets, and maps. It does not work with datatypes, arrays, and multisets. It is also not possible to generate tests for constructors. Please avoid top-level methods and wrap them inside classes or modules.
-- To generate block- or path-coverage tests use the `/generateTestMode:Block` or `/generateTestMode:Path` arguments respectively. Test generation relies on Dafny to generate Boogie implementations and Dafny does not generate a Boogie implementation when there are no proof obligations, so no tests will be generated in the latter scenario.
-- If you wish to test a particular method rather than all the methods in a file, you can specify such a method with the `/generateTestTargetMethod` command line argument and providing the fully qualified method name.
-- If you are using `/generateTestTargetMethod` and would like to inline methods that are called from the method of interest, you can do so by setting `/generateTestInlineDepth` to something larger than zero (zero is the default). The `/verifyAllModules` argument might also be relevant if the methods to be inlined are defined in included files.
-- To deal with loops, you should use `/loopUnroll` and also `/generateTestSeqLengthLimit`. The latter argument adds an axiom that limits the length of any sequence to be no greater than some specified value. This restriction can be used to ensure that the number of loop unrolls is sufficient with respect to the length of any input sequence but it can also cause the program to miss certain corner cases.
-- The`/warnDeadCode` argument will make Dafny identify potential dead code in the specified file. Note that false negatives are possible if `/loopUnroll` is not used. False positives are also possible for a variety of reasons, such as `/loopUnroll` being assigned not high enough value.
+Consider the following simple Dafny program stored in a file called `Program.dfy` (a slightly modified version of [this method](https://github.com/aws/aws-encryption-sdk-dafny/blob/fd2516f9d919ccff05ccd14f9ff158c11fb42fa1/src/Util/Sorting.dfy#L50-L57) from AWS Encryption SDK):
 
-## How to Run Tests?
-
-Suppose you have a file called `object.dfy` with the following code:
 ```dafny
-module M {
-  class Value {
-    var v:int;
-  }
-  method compareToZero(v:Value) returns (i:int) {
-    if (v.v == 0) {
-      return 0;
-    } else if (v.v > 0) {
-      return 1;
-    }
-    return -1;
+module Module {
+  newtype uint8 = x | 0 <= x < 0x100
+  function method LexLeq(x: seq<uint8>, y: seq<uint8>, n: nat):(result:bool)
+    requires n <= |x| && n <= |y| 
+    ensures result ==> n == |x| || n != |y| 
+    decreases |x| - n 
+  {
+      n == |x| 
+  || (n != |y| && x[n] < y[n]) 
+  || (n != |y| && x[n] == y[n] && LexLeq(x, y, n + 1))
   }
 }
 ```
-The tests can be generated like this:
 
-```dafny /definiteAssignment:3 /generateTestMode:Block object.dfy ```
+To generate tests for this program, run the following command (see below for a breakdown of the command-line options):
 
-Dafny will give the following list of tests as output (tabulation added manually):
+```bash
+dotnet <YOUR_DAFNY_FOLDER>/Binaries/Dafny.dll /generateTestMode:Block /timeLimit:5 /generateTestTargetMethod:Module.LexLeq /generateTestOracle:Spec /generateTestSeqLengthLimit:3 Program.dfy
+```
+
+You should get the following output:
+
 ```dafny
-include "object.dfy"
-module objectUnitTests {
-  import M
+include "Program.dfy"
+module ProgramdfyUnitTests {
+  import Module
   method {:test} test0() {
-    var v0 := getFreshMValue();
-    v0.v := -39;
-    var r0 := M.compareToZero(v0);
+    var d0 : seq<Module.uint8> := [(0 as Module.uint8), (133 as Module.uint8), (188 as Module.uint8)];
+    var d1 : seq<Module.uint8> := [(0 as Module.uint8), (133 as Module.uint8), (187 as Module.uint8)];
+    expect (1 as nat) <= |d0| && (1 as nat) <= |d1|, "Test does not meet preconditions and should be removed";
+    var r0 := Module.LexLeq(d0, d1, (1 as nat));
+    expect r0 ==> (1 as nat) == |d0| || (1 as nat) != |d1|;
   }
-  method {:test} test1() {
-    var v0 := getFreshMValue();
-    v0.v := 39;
-    var r0 := M.compareToZero(v0);
+  // More tests go here...
+  method {:test} test4() {
+    var d0 : seq<Module.uint8> := [(0 as Module.uint8)];
+    var d1 : seq<Module.uint8> := [(0 as Module.uint8), (0 as Module.uint8)];
+    expect (1 as nat) <= |d0| && (1 as nat) <= |d1|, "Test does not meet preconditions and should be removed";
+    var r0 := Module.LexLeq(d0, d1, (1 as nat));
+    expect r0 ==> (1 as nat) == |d0| || (1 as nat) != |d1|;
   }
-  method {:test} test2() {
-    var v0 := getFreshMValue();
-    v0.v := 0;
-    var r0 := M.compareToZero(v0);
-  }
-  method {:synthesize} getFreshMValue() 
-    returns (o:M.Value) 
-    ensures fresh(o)
 }
 ```
 
-Saving these tests in a file `test.dfy` and compiling the code to C# using `dafny /compileVerbose:1 /compile:0 /spillTargetCode:3 /noVerify test.dfy` produces a file `test.cs`. 
+You can optionally specify a `/generateTestPrintBpl:<FILENAME.bpl>` command line option, which should print the Boogie program that Artemis uses to generate tests (it is slightly different from the standard Dafny to Boogie translation).
 
-You can then run `dotnet test YourCSProjectFile.csproj` to execute the tests.
+To compile the tests to C\#, assuming you have put the tests above in a file called `ProgramUnitTests.dfy` and it is in the same folder as `Program.dfy`, run:
 
-Note that your `.csproj` file must include `xunit` and `Moq` libraries: 
+```bash
+dotnet <YOUR_DAFNY_FOLDER>/Binaries/Dafny.dll /spillTargetCode:3 /compile:0 /noVerify ProgramUnitTests.dfy
+```
+
+In particular, `test0` from above will be translated to:
+
+```cs
+public static void test0() {
+  Dafny.ISequence<byte> _0_d0;
+  _0_d0 = Dafny.Sequence<byte>.FromElements((byte)(0), (byte)(133), (byte)(188));
+  Dafny.ISequence<byte> _1_d1;
+  _1_d1 = Dafny.Sequence<byte>.FromElements((byte)(0), (byte)(133), (byte)(187));
+  if (!(((BigInteger.One) <= (new BigInteger((_0_d0).Count))) && ((BigInteger.One) <= (new BigInteger((_1_d1).Count))))) {
+    throw new Dafny.HaltException("/home/sasha/Desktop/artfact/aws-encryption-sdk-dafny/ProgramUnitTests.dfy(7,0): " + Dafny.Sequence<char>.FromString("Test does not meet preconditions and should be removed"));
+  }
+  bool _2_r0;
+  _2_r0 = Module_Compile.__default.LexLeq(_0_d0, _1_d1, BigInteger.One);
+  if (!(!(_2_r0) || (((BigInteger.One) == (new BigInteger((_0_d0).Count))) || ((BigInteger.One) != (new BigInteger((_1_d1).Count)))))) {
+    throw new Dafny.HaltException("/home/sasha/Desktop/artfact/aws-encryption-sdk-dafny/ProgramUnitTests.dfy(9,0): " + Dafny.Sequence<char>.FromString("expectation violation"));
+  }
+}
+```
+
+Finally, to execute the tests, first create a `Program.csproj` file with the following code in it:
 
 ```
 <ItemGroup>
@@ -98,4 +110,6 @@ Note that your `.csproj` file must include `xunit` and `Moq` libraries:
     <PackageReference Include="Moq" Version="4.16.1" />
 </ItemGroup>
 ```
+
+Once done, run `dotnet test Program.csproj` to execute the tests.
 
